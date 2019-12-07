@@ -1,9 +1,9 @@
 import java.io.File
-import javax.swing.text.Position
 import kotlin.system.exitProcess
 
 fun main() {
     val instructions = File("src/input/day2-input.txt").readText().trim().split(",").map { it.toInt() }.toMutableList()
+    val partOneInput = 12 to 2
     val noun = 52 // multiplier
     val verb = 96 // constant added to the end
 
@@ -64,10 +64,9 @@ enum class Opcode(val num: Int) {
             return 1
         }
     },
-    OUT(4) {
+    OUTPUT(4) {
         override fun compute(A: Int, B: Int, C: Int, registers: MutableList<Int>,  modes : List<Mode>, ip: Int) : Int {
-            println(modes[0].getValue(A, registers))
-            return ip
+            return modes[0].getValue(A, registers)
         }
 
         override fun instructions(): Int {
@@ -146,7 +145,7 @@ enum class Opcode(val num: Int) {
                 1 -> ADD
                 2 -> MUL
                 3 -> INPUT
-                4 -> OUT
+                4 -> OUTPUT
                 5 -> JUMP_IF_TRUE
                 6 -> JUMP_IF_FALSE
                 7 -> LESS_THAN

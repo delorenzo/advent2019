@@ -26,6 +26,11 @@ fun Day5(file: String, input: Int) {
             opcode == Opcode.INPUT -> {
                 opcode.compute(input, instructions[instructionPointer+1], 0, instructions)
             }
+            opcode == Opcode.OUTPUT -> {
+                val (A, B) = instructions.subList(instructionPointer+1, instructionPointer+3)
+                val output = opcode.compute(A, B, 0, instructions, modes, instructionPointer)
+                println(output)
+            }
             opcode.instructions() < 3 -> {
                 val (A, B) = instructions.subList(instructionPointer+1, instructionPointer+3)
                 newPointer = opcode.compute(A, B, 0, instructions, modes, instructionPointer)
