@@ -1,11 +1,11 @@
 import java.io.File
 
 fun main() {
-    Day5("src/input/day5-input.txt", 5)
+    Day5("src/input/day5-input.txt", 5L)
 }
 
-fun Day5(file: String, input: Int) {
-    val instructions = File(file).readText().trim().split(",").map { it.toInt() }.toMutableList()
+fun Day5(file: String, input: Long) {
+    val instructions = File(file).readText().trim().split(",").map { it.toLong() }.toMutableList()
     var instructionPointer = 0
 
     while (true) {
@@ -28,16 +28,16 @@ fun Day5(file: String, input: Int) {
             }
             opcode == Opcode.OUTPUT -> {
                 val (A, B) = instructions.subList(instructionPointer+1, instructionPointer+3)
-                val output = opcode.compute(A, B, 0, instructions, modes, instructionPointer)
+                val output = opcode.compute(A, B, 0, instructions, modes, instructionPointer.toLong())
                 println(output)
             }
             opcode.instructions() < 3 -> {
                 val (A, B) = instructions.subList(instructionPointer+1, instructionPointer+3)
-                newPointer = opcode.compute(A, B, 0, instructions, modes, instructionPointer)
+                newPointer = opcode.compute(A, B, 0, instructions, modes, instructionPointer.toLong()).toInt()
             }
             else -> {
                 val (A, B, C) = instructions.subList(instructionPointer+1, instructionPointer+4)
-                newPointer = opcode.compute(A, B, C, instructions, modes, instructionPointer)
+                newPointer = opcode.compute(A, B, C, instructions, modes, instructionPointer.toLong()).toInt()
             }
         }
         instructionPointer = when (newPointer) {
@@ -49,23 +49,63 @@ fun Day5(file: String, input: Int) {
 
 enum class Mode(val num: Int) {
     POSITION(0) {
-        override fun getValue(num: Int, registers: MutableList<Int>) : Int {
+        override fun getValue(num: Int, registers: MutableList<Int>, base:Int) : Int {
             return registers[num]
+        }
+
+        override fun getValue(num: Long, registers: MutableList<Long>, base: Long): Long {
+            return registers[num.toInt()]
+        }
+
+        override fun getPosition(num: Long, registers: MutableList<Long>, base: Long): Int {
+            return num.toInt()
         }
     },
     IMMEDIATE(1) {
-        override fun getValue(num: Int, registers: MutableList<Int>): Int {
+        override fun getValue(num: Int, registers: MutableList<Int>, base:Int): Int {
             return num
+        }
+
+        override fun getValue(num: Long, registers: MutableList<Long>, base: Long): Long {
+            return num
+        }
+
+        override fun getPosition(num: Long, registers: MutableList<Long>, base: Long): Int {
+            throw Exception("Invalid call for immediate mode.")
+        }
+    },
+    RELATIVE(2) {
+        override fun getValue(num: Int, registers: MutableList<Int>, base:Int): Int {
+            return registers[base+num]
+        }
+
+        override fun getValue(num: Long, registers: MutableList<Long>, base: Long): Long {
+            return registers[(base+num).toInt()]
+        }
+
+        override fun getPosition(num: Long, registers: MutableList<Long>, base: Long): Int {
+            return (base + num).toInt()
         }
     };
 
-    abstract fun getValue(num: Int, registers: MutableList<Int>) : Int
+    abstract fun getValue(num: Int, registers: MutableList<Int>, base:Int) : Int
+    abstract fun getValue(num: Long, registers: MutableList<Long>, base:Long) : Long
+    abstract fun getPosition(num: Long, registers: MutableList<Long>, base:Long) : Int
 
     companion object {
         fun valueOf(int: Int): Mode {
             return when (int) {
                 0 -> POSITION
                 1 -> IMMEDIATE
+                2 -> RELATIVE
+                else -> throw Exception("problemo here")
+            }
+        }
+        fun valueOf(long: Long): Mode {
+            return when (long) {
+                0L -> POSITION
+                1L -> IMMEDIATE
+                2L -> RELATIVE
                 else -> throw Exception("problemo here")
             }
         }
@@ -73,6 +113,7 @@ enum class Mode(val num: Int) {
             return when (char) {
                 '0' -> POSITION
                 '1' -> IMMEDIATE
+                '2' -> RELATIVE
                 else -> throw Exception("problemo here")
             }
         }
