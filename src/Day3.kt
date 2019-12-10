@@ -1,5 +1,8 @@
 import java.io.File
-import kotlin.math.absoluteValue
+import kotlin.math.*
+import java.lang.Integer
+
+
 
 lateinit var port : Point
 var steps = 1
@@ -136,11 +139,22 @@ private fun goDown(current: Point, num: Int, id: Int,
     return Point(current.x, current.y-num)
 }
 
+fun Double.isClose(other: Double) : Boolean {
+    return this == other || ((this - other).absoluteValue < 0.00000001)
+}
+
 data class Point(val x: Int, val y: Int) {
     val portDistance : Int by lazy {
         manhattan(port)
     }
-    private fun manhattan(other: Point) : Int {
+    fun manhattan(other: Point) : Int {
         return (this.x-other.x).absoluteValue + (this.y-other.y).absoluteValue
+    }
+    fun euclidean(other: Point) : Double {
+        return sqrt((this.x - other.x).toDouble().pow(2) + (this.y - other.y).toDouble().pow(2))
+    }
+    fun isBetween(a: Point, b: Point) : Boolean {
+        return  (euclidean(a) + a.euclidean(b)).isClose(euclidean(b)) ||
+                (euclidean(b) + b.euclidean(a)).isClose(euclidean(a))
     }
 }
