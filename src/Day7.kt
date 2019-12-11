@@ -1,5 +1,6 @@
 import java.io.File
 import java.util.*
+import javax.xml.stream.events.EndDocument
 
 var permutations = mutableListOf<List<Long>>()
 
@@ -68,11 +69,11 @@ fun <T> List<T>.toQueue() : Queue<T> {
 fun getE(instructions: MutableList<Long>, input: Long, phases:List<Long>) : Long {
     val instructions = Array(5) { instructions.deepCopy() }
     val A = run(instructions[0], listOf(phases[0], input).toQueue())
-    val B = run(instructions[1], listOf(phases[1], A.first).toQueue())
-    val C = run(instructions[2], listOf(phases[2], B.first).toQueue())
-    val D = run(instructions[3], listOf(phases[3], C.first).toQueue())
-    val E = run(instructions[4], listOf(phases[4], D.first).toQueue())
-    return E.first
+    val B = run(instructions[1], listOf(phases[1], A.output).toQueue())
+    val C = run(instructions[2], listOf(phases[2], B.output).toQueue())
+    val D = run(instructions[3], listOf(phases[3], C.output).toQueue())
+    val E = run(instructions[4], listOf(phases[4], D.output).toQueue())
+    return E.output
 }
 
 fun getEContinuous(instructions: MutableList<Long>, initialInput: Long, phases:List<Long>) : Long {
@@ -83,41 +84,47 @@ fun getEContinuous(instructions: MutableList<Long>, initialInput: Long, phases:L
     var lastE = 0L
     while (true) {
         val A = run(instructions[0], inputs[0], ips[0])
-        if (A.second < 0) { return lastE }
-        inputs[1].add(A.first)
-        ips[0] = A.second.toInt()
+        if (A.ip < 0) { return lastE }
+        inputs[1].add(A.output)
+        ips[0] = A.ip.toInt()
         val B = run(instructions[1], inputs[1], ips[1])
-        if (B.second < 0) { return lastE }
-        inputs[2].add(B.first)
-        ips[1] = B.second.toInt()
+        if (B.ip < 0) { return lastE }
+        inputs[2].add(B.output)
+        ips[1] = B.ip.toInt()
         val C = run(instructions[2], inputs[2], ips[2])
-        if (C.second < 0) { return lastE }
-        inputs[3].add(C.first)
-        ips[2] = C.second.toInt()
+        if (C.ip < 0) { return lastE }
+        inputs[3].add(C.output)
+        ips[2] = C.ip.toInt()
         val D = run(instructions[3],inputs[3], ips[3])
-        if (D.second < 0) { return lastE }
-        inputs[4].add(D.first)
-        ips[3] = D.second.toInt()
+        if (D.ip < 0) { return lastE }
+        inputs[4].add(D.output)
+        ips[3] = D.ip.toInt()
         val E = run(instructions[4], inputs[4], ips[4])
-        if (E.second == -1L) {
+        if (E.ip == -1L) {
             return lastE
         }
-        lastE = E.first
-        ips[4] = E.second.toInt()
-        inputs[0].add(E.first)
+        lastE = E.output
+        ips[4] = E.ip.toInt()
+        inputs[0].add(E.output)
     }
 }
 
-fun run(instructions: MutableList<Long>, input: Queue<Long>, initialPointer: Int = 0) : Pair<Long,Long> {
+data class Result (val output: Long, val ip: Long, val relativeBase: Long) {
+    companion object {
+        val END = Result(-1L,-1L,-1L)
+    }
+}
+
+fun run(instructions: MutableList<Long>, input: Queue<Long>, initialPointer: Int = 0, initialRelativeBase: Long = 0L) : Result {
     var instructionPointer = initialPointer
-    var relativeBase = 0L
+    var relativeBase = initialRelativeBase
 
     while (true) {
         val instruction = instructions[instructionPointer].toString()
         val opcode = Opcode.valueOf(instruction.takeLast(2).toInt())
         // There are not guaranteed to be pointer values after an END opcode
         if (opcode == Opcode.END) {
-            return -1L to -1L
+            return Result.END
         }
         var newPointer = instructionPointer
         var modes : List<Mode>
@@ -136,7 +143,8 @@ fun run(instructions: MutableList<Long>, input: Queue<Long>, initialPointer: Int
             opcode == Opcode.OUTPUT -> {
                 val (A, B) = instructions.subList(instructionPointer+1, instructionPointer+3)
                 instructionPointer = updatePointer(instructionPointer, newPointer, opcode.instructions())
-                return opcode.compute(A, B, 0, instructions, modes, instructionPointer.toLong(), relativeBase) to instructionPointer.toLong()
+                val output = opcode.compute(A, B, 0, instructions, modes, instructionPointer.toLong(), relativeBase)
+                return Result(output, instructionPointer.toLong(), relativeBase)
             }
             opcode == Opcode.RELATIVE_BASE_OFFSET -> {
                 val A = instructions[instructionPointer+1]

@@ -1,4 +1,5 @@
 import java.io.File
+import kotlin.math.absoluteValue
 
 fun main() {
     Day5("src/input/day5-input.txt", 5L)

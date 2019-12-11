@@ -15,5 +15,5 @@ fun BOOST(file: String, inputParam: Long = 1) : Long {
     input.add(inputParam)
     val result = run(instructions, input)
     println(result)
-    return result.first
+    return result.output
 }
