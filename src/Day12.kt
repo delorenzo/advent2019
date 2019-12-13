@@ -5,25 +5,12 @@ fun main() {
     simulateMotion("src/input/day12-input.txt")
 }
 
-//35975
-//18088521
-
 data class Vector(var x: Int, var y: Int, var z: Int) {
     operator fun plus(increment: Vector) : Vector {
         return Vector(this.x + increment.x, this.y + increment.y, this.z + increment.z)
     }
 }
 data class Planet(var position: Vector, var velocity: Vector = Vector(0,0,0))
-
-fun repeating(planets: List<Planet>, previous: List<Vector>) : Boolean {
-    if (planets.size != previous.size) return false
-    for (i in planets.indices) {
-        if (planets[i].position != previous[i]) {
-            return false
-        }
-    }
-    return true
-}
 
 fun simulateMotion(file: String) {
     val regex = Regex("<x=(\\-?[0-9]+), y=(\\-?[0-9]+), z=(\\-?[0-9]+)>")
@@ -34,19 +21,55 @@ fun simulateMotion(file: String) {
         moons.add(Planet(Vector(groups[0], groups[1], groups[2])))
     }
     var previousMoons = MutableList(4) { Vector(0,0,0)}
+    var zeroes= MutableList(3) {0L}
+    var toFind = 3
     for (i in 1 until 46867749240000) {
-        if (i % 10000000L == 0L) {
-            println("Step#$i")
-        }
+        println("Step#$i")
         applyGravity(moons)
         applyVelocity(moons, previousMoons)
-        if (repeating(moons, previousMoons)) {
-            val stepsEstimated = i*2
-            println("Took $stepsEstimated steps.")
+        printVelocities(moons)
+
+        if (moons.all { it.velocity.x == 0 }) {
+            if (zeroes[0] == 0L) {
+                zeroes[0] = i
+                toFind--
+            }
+        }
+        if (moons.all { it.velocity.y == 0 }) {
+            if (zeroes[1] == 0L) {
+                zeroes[1] = i
+                toFind--
+            }
+        }
+        if (moons.all { it.velocity.z == 0 }) {
+            if (zeroes[2] == 0L) {
+                zeroes[2] = i
+                toFind--
+            }
+        }
+
+        if (toFind == 0) {
+            println(zeroes) // LCM of this * 2 = answer https://www.wolframalpha.com/
             return
         }
     }
     println(totalEnergy(moons))
+}
+
+fun printPositions(moons: List<Planet>) {
+    print("P")
+    moons.forEach {
+        print("${it.position}")
+    }
+    println()
+}
+
+fun printVelocities(moons: List<Planet>) {
+    print("V")
+    moons.forEach {
+        print("${it.velocity}")
+    }
+    println()
 }
 
 fun applyGravity(moons: List<Planet>) {
