@@ -34,7 +34,10 @@ fun simulateMotion(file: String) {
         moons.add(Planet(Vector(groups[0], groups[1], groups[2])))
     }
     var previousMoons = MutableList(4) { Vector(0,0,0)}
-    for (i in 1 until 46867749240) {
+    for (i in 1 until 46867749240000) {
+        if (i % 10000000L == 0L) {
+            println("Step#$i")
+        }
         applyGravity(moons)
         applyVelocity(moons, previousMoons)
         if (repeating(moons, previousMoons)) {

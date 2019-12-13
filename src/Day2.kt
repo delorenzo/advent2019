@@ -56,6 +56,7 @@ enum class Opcode(val num: Int) {
     },
     INPUT(3) {
         override fun compute(A: Long, B: Long, C: Long, registers: MutableList<Long>,  modes : List<Mode>, ip: Long, relativeBase: Long) : Long {
+            println("looking at input: $A")
             registers[modes[0].getPosition(B, registers, relativeBase)] = A
             return ip
         }
@@ -67,7 +68,7 @@ enum class Opcode(val num: Int) {
     OUTPUT(4) {
         override fun compute(A: Long, B: Long, C: Long, registers: MutableList<Long>,  modes : List<Mode>, ip: Long, relativeBase: Long) : Long {
             val result = modes[0].getValue(A, registers, relativeBase)
-            println(result)
+            //println(result)
             return result
         }
 
