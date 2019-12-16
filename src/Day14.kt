@@ -7,7 +7,7 @@ fun main() {
     val answer = fuel("src/input/day14-input.txt")
     println(answer)
 }
-//(843220, 2169536)
+//(843220, 2169535)
 private data class Ingredient(val amount: Long, val type: String)
 private data class Recipe(val input: List<Ingredient>, val output: Ingredient)
 
