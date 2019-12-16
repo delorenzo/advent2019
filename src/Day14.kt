@@ -6,36 +6,51 @@ import kotlin.math.roundToInt
 fun main() {
     val answer = fuel("src/input/day14-input.txt")
     println(answer)
-    println(1000000000000/answer)
 }
-
-private data class Ingredient(val amount: Int, val type: String)
+//(843220, 2169536)
+private data class Ingredient(val amount: Long, val type: String)
 private data class Recipe(val input: List<Ingredient>, val output: Ingredient)
 
-fun  fuel(file: String) : Int {
+fun fuel(file: String) : Pair<Long, Long> {
     val recipes = mutableListOf<Recipe>()
     val regex = Regex("([0-9]+) (FUEL|ORE|[A-Z]+),? ?")
     File(file).forEachLine{
         val inputs = mutableListOf<Ingredient>()
         val (inputString, outputString) = it.trim().split(" => ")
-        inputString.split(",").map { string -> regex.matchEntire(string.trim()) }.map {result -> result!!.groupValues }.map { groups-> inputs.add(Ingredient(groups[1].toInt(), groups[2])) }
+        inputString.split(",").map { string -> regex.matchEntire(string.trim()) }.map {result -> result!!.groupValues }.map { groups-> inputs.add(Ingredient(groups[1].toLong(), groups[2])) }
 
         val outputResult = regex.matchEntire(outputString)
-        val output = Ingredient(outputResult!!.groupValues[1].toInt(), outputResult.groupValues[2])
+        val output = Ingredient(outputResult!!.groupValues[1].toLong(), outputResult.groupValues[2])
 
         recipes.add(Recipe(inputs, output))
     }
-    val extras = mutableMapOf<String, Int>()
-    val costs = mutableMapOf<String, Cost>()
-    var totalCost = minCost("FUEL", extras, 1, recipes, costs)
-    return totalCost
+    val extras = mutableMapOf<String, Long>()
+    var totalCost = minCost("FUEL", extras, 1, recipes)
+    var fuel = maxFuel(recipes)
+    return totalCost to fuel
+}
+fun MutableMap<String, Long>.times(num: Long) {
+    this.forEach{ (key, value) ->
+        this[key] = value * num
+    }
 }
 
-private data class Cost(val realCost: Int, val relativeCost: Int, val producedAmount: Int)
-
 val myLock = Any()
-private fun minCost(type: String, extras: MutableMap<String, Int>, amount: Int, recipes: List<Recipe>, costs: MutableMap<String, Cost>) : Int {
-    if (type == "ORE") return 1 * amount
+
+private fun maxFuel(recipes: List<Recipe>): Long {
+    val extras = mutableMapOf<String, Long>()
+    var oreLeft = 1000000000000
+    var fuel = 0L
+    while (oreLeft > 0) {
+        var totalCost = minCost("FUEL", extras, 1, recipes)
+        oreLeft -= totalCost
+        fuel++
+    }
+    return fuel-1
+}
+
+private fun minCost(type: String, extras: MutableMap<String, Long>, amount: Long, recipes: List<Recipe>) : Long {
+    if (type == "ORE") return 1L * amount
     synchronized(myLock) {
         if (extras.getOrDefault(type, 0) >= amount) {
             extras[type] = extras[type]!! - amount
@@ -44,20 +59,18 @@ private fun minCost(type: String, extras: MutableMap<String, Int>, amount: Int, 
     }
     val recipe = recipes.first{ it.output.type == type }
     synchronized(myLock) {
-        val onHand = extras.getOrDefault(type, 0)
+        val onHand = extras.getOrDefault(type, 0L)
         var amountNeeded = amount
         if (onHand > 0) {
             amountNeeded -= onHand
-            extras[type] = 0
+            extras[type] = 0L
         }
-        var totalAmount = 0
-        var total = 0
+        var totalAmount = 0L
+        var total = 0L
         while (totalAmount < amountNeeded) {
-            val cost = recipe.input.sumBy { minCost(it.type, extras, it.amount, recipes, costs) }
-            val relativeCost = (cost / recipe.output.amount)
-            val minForAmount = Cost(cost, relativeCost, recipe.output.amount)
-            costs[type] = minForAmount
-            totalAmount += minForAmount.producedAmount
+            var cost = 0L
+            recipe.input.map { cost += minCost(it.type, extras, it.amount, recipes) }
+            totalAmount += recipe.output.amount
             total += cost
         }
         if (totalAmount > amountNeeded) {
