@@ -4,7 +4,9 @@ import javax.print.attribute.standard.OrientationRequested
 import kotlin.math.roundToInt
 
 fun main() {
-    println(fuel("src/input/day14-input5.txt"))
+    val answer = fuel("src/input/day14-input.txt")
+    println(answer)
+    println(1000000000000/answer)
 }
 
 private data class Ingredient(val amount: Int, val type: String)
@@ -23,13 +25,16 @@ fun  fuel(file: String) : Int {
 
         recipes.add(Recipe(inputs, output))
     }
-    return minCost("FUEL", mutableMapOf(), 1, recipes)
+    val extras = mutableMapOf<String, Int>()
+    val costs = mutableMapOf<String, Cost>()
+    var totalCost = minCost("FUEL", extras, 1, recipes, costs)
+    return totalCost
 }
 
 private data class Cost(val realCost: Int, val relativeCost: Int, val producedAmount: Int)
 
 val myLock = Any()
-private fun minCost(type: String, extras: MutableMap<String, Int>, amount: Int, recipes: List<Recipe>) : Int {
+private fun minCost(type: String, extras: MutableMap<String, Int>, amount: Int, recipes: List<Recipe>, costs: MutableMap<String, Cost>) : Int {
     if (type == "ORE") return 1 * amount
     synchronized(myLock) {
         if (extras.getOrDefault(type, 0) >= amount) {
@@ -37,21 +42,9 @@ private fun minCost(type: String, extras: MutableMap<String, Int>, amount: Int, 
             return 0
         }
     }
-//    minCosts[type]?.let { list ->
-//        val onHand = extras.getOrDefault(type, 0)
-//        val minForAmount = list.minBy { it.realCost * (((amount-onHand).toFloat() / it.producedAmount.toFloat()).roundToInt()) }!!
-//        extras[type] = onHand + minForAmount.producedAmount-amount
-//        return minForAmount.realCost
-//    }
     val recipe = recipes.first{ it.output.type == type }
-//    val costs = mutableListOf<Cost>()
-    val cost = recipe.input.sumBy { minCost(it.type, extras, it.amount, recipes) }
-    val relativeCost = (cost / recipe.output.amount)
-    val minForAmount = Cost(cost, relativeCost, recipe.output.amount)
-//    minCosts[type] = costs
     synchronized(myLock) {
         val onHand = extras.getOrDefault(type, 0)
-        //val minForAmount = costs.minBy { it.relativeCost }!!
         var amountNeeded = amount
         if (onHand > 0) {
             amountNeeded -= onHand
@@ -60,14 +53,16 @@ private fun minCost(type: String, extras: MutableMap<String, Int>, amount: Int, 
         var totalAmount = 0
         var total = 0
         while (totalAmount < amountNeeded) {
+            val cost = recipe.input.sumBy { minCost(it.type, extras, it.amount, recipes, costs) }
+            val relativeCost = (cost / recipe.output.amount)
+            val minForAmount = Cost(cost, relativeCost, recipe.output.amount)
+            costs[type] = minForAmount
             totalAmount += minForAmount.producedAmount
-            total += minForAmount.realCost
+            total += cost
         }
         if (totalAmount > amountNeeded) {
             extras[type] = (extras.getOrDefault(type, 0) + totalAmount - amountNeeded)
         }
-
-        println("Total for $amount of $type is $total ORE")
         return total
     }
 }
